@@ -1,0 +1,142 @@
+REQUERIMIENTOS CORE DE DESARROLLO
+=================================
+Proyecto: SaaS de gestion de ventas
+
+Este documento define las reglas base que deben seguirse al escribir, modificar o revisar codigo del proyecto.
+
+
+1. STACK TECNOLOGICO
+--------------------
+
+- Frontend: React con Vite.
+- Lenguaje principal: JavaScript.
+- Estructura visual: HTML semantico y CSS nativo.
+- Backend: Node.js con Express.
+- Base de datos: MySQL.
+- Cliente MySQL: mysql2.
+- Variables de entorno: archivo .env local basado en .env.example.
+- Gestor de paquetes: npm.
+
+
+2. ESTRUCTURA DEL PROYECTO
+--------------------------
+
+- frontend/: aplicacion React y recursos de interfaz.
+- backend/: API, logica de negocio y acceso a datos.
+- database/: esquemas, migraciones y datos iniciales de MySQL.
+- Informacion-Importante(ser ordenado)/: documentacion funcional y tecnica.
+
+Reglas:
+- Mantener separadas las responsabilidades del frontend, backend y base de datos.
+- No mezclar consultas SQL directamente dentro de componentes React.
+- No guardar credenciales, contrasenas ni tokens en el repositorio.
+- Reutilizar componentes y funciones antes de duplicar codigo.
+
+
+3. REQUISITOS DEL FRONTEND
+--------------------------
+
+- Usar componentes funcionales de React.
+- Mantener cada componente enfocado en una responsabilidad.
+- Usar HTML semantico: header, nav, main, section, form, table y footer cuando corresponda.
+- Preferir CSS nativo y clases descriptivas.
+- La interfaz debe ser responsive para escritorio, tablet y movil.
+- Todos los formularios deben incluir etiquetas, validaciones y mensajes de error claros.
+- Gestionar los estados de carga, vacio, exito y error.
+- No colocar logica de acceso a MySQL en el frontend.
+- Centralizar las llamadas a la API en servicios o funciones reutilizables.
+- Evitar estilos en linea salvo casos justificados.
+
+
+4. REQUISITOS DEL BACKEND
+-------------------------
+
+- Mantener rutas, controladores, servicios y acceso a datos separados cuando el modulo crezca.
+- Validar toda entrada recibida desde el cliente.
+- Devolver respuestas JSON consistentes.
+- Usar codigos HTTP adecuados.
+- No exponer informacion sensible en los mensajes de error.
+- Capturar y registrar errores del servidor sin revelar credenciales.
+- Configurar CORS de forma controlada en produccion.
+- Usar consultas parametrizadas para evitar inyecciones SQL.
+- Implementar autenticacion y autorizacion antes de exponer datos privados.
+- Mantener la logica de negocio en el backend, nunca confiar solo en validaciones del frontend.
+
+
+5. REQUISITOS DE MYSQL
+----------------------
+
+- Usar nombres descriptivos y consistentes para tablas y columnas.
+- Definir claves primarias, claves foraneas, restricciones e indices necesarios.
+- Usar migraciones o scripts versionados para modificar el esquema.
+- No borrar ni modificar datos de produccion sin respaldo y procedimiento aprobado.
+- Usar transacciones cuando una operacion modifique varias tablas.
+- Guardar fechas con un formato consistente.
+- Almacenar contrasenas unicamente como hashes seguros, nunca en texto plano.
+- Revisar el rendimiento de consultas que trabajen con grandes volumenes de datos.
+
+
+6. SEGURIDAD
+------------
+
+- Mantener los archivos .env fuera del control de versiones.
+- Usar .env.example sin secretos reales.
+- Validar y sanitizar datos de entrada.
+- Aplicar permisos segun el rol del usuario.
+- Proteger endpoints privados mediante autenticacion.
+- No incluir tokens o contrasenas en logs, capturas o mensajes de error.
+- Actualizar dependencias cuando existan vulnerabilidades conocidas.
+- Revisar especialmente autenticacion, sesiones, consultas SQL y subida de archivos.
+
+
+7. CALIDAD DEL CODIGO
+---------------------
+
+- Usar nombres claros para variables, funciones, componentes y rutas.
+- Evitar funciones demasiado extensas y duplicacion de logica.
+- Mantener un formato consistente en todos los archivos.
+- Comentar solo decisiones complejas o comportamientos no evidentes.
+- No introducir dependencias nuevas sin justificar su necesidad.
+- Mantener compatibilidad con los scripts definidos en package.json.
+- Corregir errores de consola y advertencias relevantes antes de finalizar.
+
+
+8. PRUEBAS Y VALIDACION
+-----------------------
+
+Antes de considerar terminada una funcionalidad:
+
+- Ejecutar la compilacion del frontend con npm run build.
+- Validar la sintaxis del backend.
+- Probar los endpoints principales de forma manual o automatizada.
+- Comprobar casos correctos, datos invalidos y errores de permisos.
+- Verificar la interfaz en escritorio y movil.
+- Confirmar que los cambios no rompen funcionalidades existentes.
+- Revisar que no se hayan incluido secretos ni archivos generados innecesarios.
+
+
+9. FLUJO DE TRABAJO
+-------------------
+
+- Leer la documentacion existente antes de modificar una funcionalidad.
+- Hacer cambios pequenos y relacionados con una sola tarea.
+- Revisar el diff antes de entregar los cambios.
+- Usar mensajes de commit claros si se trabaja con Git.
+- No subir node_modules, archivos .env ni carpetas dist generadas.
+- Actualizar la documentacion cuando cambie la configuracion o el comportamiento.
+- Dejar indicado cualquier requisito manual pendiente, como configurar MySQL.
+
+
+10. CRITERIO DE ACEPTACION
+--------------------------
+
+Una funcionalidad se considera lista cuando:
+
+- Cumple el comportamiento solicitado.
+- Respeta la separacion frontend, backend y base de datos.
+- Tiene validaciones y manejo de errores.
+- No introduce vulnerabilidades evidentes.
+- Se adapta a las pantallas principales.
+- Ha sido probada con casos normales y casos de error.
+- El codigo es comprensible y mantenible.
+- La documentacion necesaria esta actualizada.

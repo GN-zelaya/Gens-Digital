@@ -1,0 +1,84 @@
+SAAS DE GESTION DE VENTAS
+=========================
+
+1. INVESTIGACION
+----------------
+
+1.1 Problema
+    - Identificar las dificultades actuales en la gestion de ventas.
+    - Analizar los procesos manuales o poco eficientes.
+    - Determinar las necesidades que debe resolver el SaaS.
+
+1.2 Usuarios objetivo
+    - Definir el perfil de los usuarios principales.
+    - Identificar pequenas y medianas empresas potenciales.
+    - Analizar los roles que utilizaran la plataforma.
+    - Determinar sus necesidades, objetivos y nivel tecnico.
+
+
+2. DISENO
+---------
+
+2.1 Panel principal
+    - Mostrar un resumen general del negocio.
+    - Incluir indicadores clave de ventas.
+    - Visualizar objetivos, ingresos y rendimiento.
+    - Facilitar el acceso a las funciones principales.
+
+2.2 Clientes
+    - Crear y gestionar fichas de clientes.
+    - Registrar datos de contacto y empresa.
+    - Consultar el historial de interacciones y compras.
+    - Permitir busquedas, filtros y segmentacion.
+
+2.3 Ventas
+    - Registrar nuevas oportunidades y ventas.
+    - Gestionar etapas del proceso comercial.
+    - Consultar el estado de cada oportunidad.
+    - Registrar importes, fechas, responsables y productos.
+    - Generar reportes de rendimiento comercial.
+
+
+3. DESARROLLO
+------------
+
+3.1 Frontend
+    - Diseñar una interfaz clara, responsive y facil de usar.
+    - Implementar el panel principal.
+    - Implementar los modulos de clientes y ventas.
+    - Incorporar formularios, tablas, filtros y reportes.
+    - Gestionar la navegacion y los estados de carga o error.
+
+3.2 Backend
+    - Crear la API de la aplicacion.
+    - Implementar autenticacion y autorizacion.
+    - Gestionar usuarios, clientes, oportunidades y ventas.
+    - Validar datos y controlar errores.
+    - Preparar la logica para reportes y notificaciones.
+
+3.3 Base de datos
+    - Diseñar el modelo de datos.
+    - Crear las tablas de usuarios, clientes, ventas y productos.
+    - Definir relaciones, restricciones e indices.
+    - Configurar copias de seguridad y migraciones.
+    - Proteger la informacion almacenada.
+
+
+4. LANZAMIENTO
+-------------
+
+4.1 Pruebas
+    - Realizar pruebas unitarias.
+    - Realizar pruebas de integracion.
+    - Validar los flujos principales de usuario.
+    - Comprobar la seguridad y los permisos.
+    - Evaluar el rendimiento y la compatibilidad responsive.
+    - Corregir errores antes de la publicacion.
+
+4.2 Publicacion
+    - Configurar los entornos de produccion.
+    - Publicar el frontend y el backend.
+    - Configurar la base de datos de produccion.
+    - Activar dominio, certificados y variables de entorno.
+    - Supervisar logs, disponibilidad y rendimiento.
+    - Preparar mantenimiento y futuras actualizaciones
