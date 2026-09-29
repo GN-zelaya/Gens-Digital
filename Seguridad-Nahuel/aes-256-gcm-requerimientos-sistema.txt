@@ -1,0 +1,357 @@
+AES-256-GCM - IMPLEMENTACION Y REQUERIMIENTOS DEL SISTEMA
+=========================================================
+
+Proyecto: SaaS de gestion de ventas
+Objetivo: proteger informacion sensible almacenada o transmitida por el backend.
+
+
+1. ALCANCE
+----------
+
+AES-256-GCM debe implementarse en el backend Node.js para cifrar datos sensibles antes de almacenarlos o enviarlos a servicios externos.
+
+Ejemplos de informacion que puede requerir cifrado:
+
+- Tokens de integracion.
+- Credenciales de servicios externos.
+- Datos privados que no deban quedar visibles en la base de datos.
+- Archivos o campos sensibles definidos por el negocio.
+
+Las contrasenas de usuarios no deben cifrarse con AES. Deben almacenarse como hashes usando Argon2id, scrypt o bcrypt.
+
+
+2. PARAMETROS CRIPTOGRAFICOS OBLIGATORIOS
+-----------------------------------------
+
+- Algoritmo: AES-256-GCM.
+- Tamano de la clave: 256 bits, exactamente 32 bytes.
+- Nonce o IV: 12 bytes, generado aleatoriamente para cada cifrado.
+- Tag de autenticacion: 16 bytes, 128 bits.
+- AAD: datos autenticados adicionales opcionales, pero deben ser iguales al descifrar.
+- Codificacion para transporte: base64 o hexadecimal, usando una sola convencion.
+- Cada operacion de cifrado debe usar un nonce nuevo y unico.
+
+Regla critica:
+Nunca reutilizar el mismo nonce con la misma clave. La reutilizacion puede comprometer la confidencialidad y la autenticidad de los datos.
+
+
+3. FORMATO RECOMENDADO DEL VALOR CIFRADO
+-----------------------------------------
+
+Guardar los componentes en un formato versionado y facil de identificar:
+
+v1:base64(nonce):base64(tag):base64(ciphertext)
+
+Si se utiliza AAD, la version del registro, el identificador del campo o el contexto deben reconstruirse exactamente durante el descifrado.
+
+No almacenar el nonce, el tag o el ciphertext sin indicar su version y formato.
+
+
+4. IMPLEMENTACION EN NODE.JS
+----------------------------
+
+Usar el modulo criptografico nativo de Node.js. No implementar AES manualmente.
+
+Ejemplo conceptual:
+
+import crypto from 'node:crypto';
+
+const ALGORITHM = 'aes-256-gcm';
+const NONCE_LENGTH = 12;
+const AUTH_TAG_LENGTH = 16;
+const KEY_LENGTH = 32;
+
+function getKey() {
+  const key = Buffer.from(process.env.APP_ENCRYPTION_KEY || '', 'base64');
+
+  if (key.length !== KEY_LENGTH) {
+    throw new Error('APP_ENCRYPTION_KEY debe decodificar exactamente 32 bytes');
+  }
+
+  return key;
+}
+
+export function encrypt(value, associatedData = '') {
+  const nonce = crypto.randomBytes(NONCE_LENGTH);
+  const cipher = crypto.createCipheriv(ALGORITHM, getKey(), nonce, {
+    authTagLength: AUTH_TAG_LENGTH,
+  });
+
+  if (associatedData) {
+    cipher.setAAD(Buffer.from(associatedData, 'utf8'));
+  }
+
+  const ciphertext = Buffer.concat([
+    cipher.update(value, 'utf8'),
+    cipher.final(),
+  ]);
+  const tag = cipher.getAuthTag();
+
+  return [
+    'v1',
+    nonce.toString('base64'),
+    tag.toString('base64'),
+    ciphertext.toString('base64'),
+  ].join(':');
+}
+
+export function decrypt(payload, associatedData = '') {
+  const [version, nonceEncoded, tagEncoded, ciphertextEncoded] = payload.split(':');
+
+  if (version !== 'v1') {
+    throw new Error('Version de cifrado no soportada');
+  }
+
+  const nonce = Buffer.from(nonceEncoded, 'base64');
+  const tag = Buffer.from(tagEncoded, 'base64');
+  const ciphertext = Buffer.from(ciphertextEncoded, 'base64');
+
+  if (nonce.length !== NONCE_LENGTH || tag.length !== AUTH_TAG_LENGTH) {
+    throw new Error('Payload cifrado invalido');
+  }
+
+  const decipher = crypto.createDecipheriv(ALGORITHM, getKey(), nonce, {
+    authTagLength: AUTH_TAG_LENGTH,
+  });
+  decipher.setAuthTag(tag);
+
+  if (associatedData) {
+    decipher.setAAD(Buffer.from(associatedData, 'utf8'));
+  }
+
+  return Buffer.concat([
+    decipher.update(ciphertext),
+    decipher.final(),
+  ]).toString('utf8');
+}
+
+La operacion decrypt debe tratar cualquier fallo de autenticacion como un error. Nunca devolver datos parcialmente descifrados.
+
+
+5. GESTION DE CLAVES
+--------------------
+
+- Generar la clave con un generador criptograficamente seguro.
+- Guardar la clave en un gestor de secretos o KMS en produccion.
+- Para desarrollo, usar una variable local en backend/.env que nunca se suba a Git.
+- No escribir claves en el codigo fuente, logs, tickets o capturas de pantalla.
+- No reutilizar claves entre desarrollo, pruebas y produccion.
+- Mantener un identificador de version de clave para permitir rotacion.
+- Definir un procedimiento para rotar claves sin perder acceso a datos antiguos.
+- Durante una rotacion, descifrar con la clave antigua y volver a cifrar con la nueva.
+- Restringir el acceso a la clave solo al proceso backend que la necesita.
+
+Generar una clave base64 de 32 bytes con Node.js:
+
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+
+La salida debe colocarse en APP_ENCRYPTION_KEY dentro del entorno correspondiente.
+
+
+6. REQUISITOS DEL SISTEMA
+-------------------------
+
+Desarrollo:
+
+- Node.js 20 LTS o superior.
+- npm 10 o superior.
+- Backend ejecutado desde la carpeta backend/.
+- Modulo nativo node:crypto disponible.
+- Archivo backend/.env local.
+- APP_ENCRYPTION_KEY configurada como una clave base64 de 32 bytes.
+- Acceso a la base de datos MySQL del entorno de desarrollo.
+- Git configurado para excluir archivos .env.
+
+Produccion:
+
+- Node.js LTS actualizado.
+- Sistema operativo con soporte para Node.js y actualizaciones de seguridad.
+- Gestor de secretos o KMS para almacenar APP_ENCRYPTION_KEY.
+- HTTPS obligatorio para toda comunicacion externa.
+- Permisos minimos para el proceso de la API.
+- Logs centralizados sin valores sensibles.
+- Copias de seguridad cifradas y pruebas periodicas de restauracion.
+- Monitoreo de errores de descifrado y accesos no autorizados.
+- Plan documentado de rotacion y recuperacion de claves.
+
+
+7. REQUISITOS DE BASE DE DATOS
+------------------------------
+
+- Guardar el payload cifrado en una columna TEXT o VARCHAR con capacidad suficiente.
+- Guardar el identificador de version de cifrado si no forma parte del payload.
+- No crear indices sobre el ciphertext esperando busquedas por el valor original.
+- Si se necesita buscar por un dato cifrado, evaluar un hash HMAC separado para busquedas exactas.
+- No usar el ciphertext como identificador publico.
+- Proteger copias de seguridad y exportaciones de MySQL.
+
+
+8. REQUISITOS DE SEGURIDAD
+--------------------------
+
+AES-256-GCM protege la confidencialidad y la integridad del contenido, pero no reemplaza HTTPS, autenticacion, autorizacion ni una gestion segura de claves.
+
+- Cifrar en el backend, no confiar en que el frontend proteja secretos.
+- Validar el tamano y formato del payload antes de descifrar.
+- No aceptar claves enviadas por el cliente.
+- No registrar plaintext, claves, nonces completos ni tags en logs.
+- Usar mensajes de error genericos hacia el usuario.
+- Aplicar autenticacion y autorizacion antes de acceder a datos descifrados.
+- Limitar intentos y registrar eventos sospechosos sin incluir informacion sensible.
+- Revisar dependencias y vulnerabilidades con npm audit y el proceso de seguridad del proyecto.
+
+
+9. MODELO DE AMENAZAS Y CLASIFICACION
+-------------------------------------
+
+Antes de cifrar un dato, documentar:
+
+- Que informacion se protege.
+- Que impacto tendria su exposicion, modificacion o perdida.
+- Si la amenaza principal es una filtracion de la base de datos, del backup, del servidor o de una cuenta.
+- Quien puede acceder al dato descifrado y durante cuanto tiempo.
+
+Clasificar los datos como publicos, internos, confidenciales o altamente confidenciales. Los datos confidenciales y altamente confidenciales deben cifrarse en el backend y tener controles de acceso auditables.
+
+
+10. AAD Y CONTEXTO DEL DATO
+---------------------------
+
+Cuando sea posible, usar AAD para vincular el ciphertext con su contexto. Un formato recomendado es:
+
+tenant_id:tabla:registro:campo:version
+
+El mismo valor debe utilizarse al cifrar y al descifrar. Si alguien copia un ciphertext de un cliente, registro o campo diferente, la autenticacion debe fallar.
+
+El frontend nunca debe elegir el AAD, la clave ni el identificador de tenant. El backend debe reconstruirlos a partir de la sesion autenticada y de la base de datos.
+
+
+11. IDENTIFICACION Y ROTACION DE CLAVES
+---------------------------------------
+
+Cada clave debe tener un identificador estable, por ejemplo key-2026-01. El payload almacenado debe incluir su key_id:
+
+v1:key-2026-01:base64(nonce):base64(tag):base64(ciphertext)
+
+Reglas de rotacion:
+
+- La clave nueva se usa para cifrados nuevos.
+- Las claves antiguas se mantienen temporalmente solo para descifrar.
+- Re-cifrar los datos antiguos de forma progresiva y verificable.
+- Retirar una clave solo despues de confirmar que no quedan datos dependientes de ella.
+- No eliminar la clave antigua antes de completar y probar la migracion.
+- Tener un procedimiento de emergencia para revocar y reemplazar una clave filtrada.
+- Mantener separadas las claves de desarrollo, pruebas y produccion.
+
+
+12. LIMITES OPERATIVOS DE AES-GCM
+---------------------------------
+
+- Definir un tamano maximo para cada valor cifrado.
+- No usar AES-GCM para archivos grandes sin un diseno especifico de cifrado por partes.
+- Definir limites de uso por clave y rotarlas preventivamente.
+- No reutilizar nonces aunque el proceso se reinicie o existan varias instancias del backend.
+- Evitar cifrar el mismo dato repetidamente sin necesidad.
+- Monitorear errores de autenticacion sin revelar detalles del payload.
+
+
+13. AUTENTICACION Y AUTORIZACION
+--------------------------------
+
+- Exigir autenticacion antes de acceder a informacion descifrada.
+- Aplicar autorizacion por rol y por tenant.
+- Usar MFA para cuentas administrativas.
+- Definir expiracion, revocacion y renovacion de sesiones.
+- No enviar claves ni datos descifrados al navegador salvo que sea imprescindible.
+- Aplicar limitacion de intentos en login, recuperacion de cuenta y endpoints sensibles.
+- Verificar que un usuario no pueda consultar datos de otro cliente cambiando un identificador.
+
+
+14. INFRAESTRUCTURA Y OPERACION
+-------------------------------
+
+- Usar HTTPS/TLS en todas las comunicaciones externas.
+- Ejecutar la API con un usuario sin privilegios de administrador.
+- Aplicar firewall y permisos minimos en el servidor y en MySQL.
+- Mantener Node.js, MySQL, el sistema operativo y dependencias actualizados.
+- No ejecutar contenedores como root.
+- Usar un gestor de secretos o KMS en produccion.
+- Centralizar logs y alertas sin incluir secretos ni plaintext.
+- Cifrar backups, exportaciones y replicas de la base de datos.
+
+
+15. AUDITORIA Y RESPUESTA ANTE INCIDENTES
+-----------------------------------------
+
+Registrar de forma segura:
+
+- Accesos a endpoints sensibles.
+- Cambios de permisos.
+- Operaciones de rotacion de claves.
+- Errores de autenticacion de payloads.
+- Cambios de configuracion de seguridad.
+
+Los logs no deben incluir claves, plaintext, nonces completos, tags ni ciphertext completo.
+
+Si una clave se filtra:
+
+1. Revocar el secreto comprometido.
+2. Generar y distribuir una clave nueva.
+3. Identificar los datos afectados.
+4. Re-cifrar los datos con la nueva clave.
+5. Revisar accesos y logs del periodo afectado.
+6. Documentar el incidente y las acciones correctivas.
+
+
+16. RETENCION Y ELIMINACION
+---------------------------
+
+- Definir cuanto tiempo se conserva cada categoria de dato.
+- Eliminar datos y claves cuando termine su periodo de retencion.
+- Incluir backups y replicas en el procedimiento de eliminacion.
+- Documentar como se cumple una solicitud de borrado de cliente.
+- Verificar que los datos eliminados no queden disponibles mediante endpoints antiguos.
+
+
+17. PRUEBAS DE SEGURIDAD ADICIONALES
+------------------------------------
+
+- Ejecutar analisis de dependencias y vulnerabilidades en cada entrega.
+- Probar autorizacion entre usuarios y tenants.
+- Realizar pruebas de penetracion sobre autenticacion y endpoints sensibles.
+- Probar restauracion de backups cifrados.
+- Buscar secretos accidentalmente incluidos en Git.
+- Verificar que los logs no contengan informacion protegida.
+- Simular la perdida de una clave y ejecutar el procedimiento de recuperacion.
+- Usar vectores de prueba conocidos y resultados esperados para cifrado y descifrado.
+
+
+18. PRUEBAS MINIMAS
+------------------
+
+- Cifrar y descifrar correctamente texto corto y texto extenso.
+- Verificar que dos cifrados del mismo texto produzcan payloads diferentes.
+- Rechazar payloads con nonce alterado.
+- Rechazar payloads con tag alterado.
+- Rechazar ciphertext alterado.
+- Rechazar AAD diferente.
+- Rechazar claves con tamano incorrecto.
+- Verificar que una clave de otro entorno no descifre los datos.
+- Probar rotacion de claves con datos antiguos y nuevos.
+- Confirmar que ningun secreto aparece en los logs.
+
+
+19. CRITERIO DE ACEPTACION
+--------------------------
+
+La implementacion se considera lista cuando:
+
+- Usa AES-256-GCM mediante node:crypto.
+- Cada cifrado genera un nonce aleatorio de 12 bytes.
+- Cada payload conserva su tag de autenticacion de 16 bytes.
+- La clave tiene exactamente 32 bytes y se obtiene desde un secreto externo.
+- El descifrado valida autenticidad antes de entregar el contenido.
+- Existe versionado del formato para futuras migraciones.
+- Las contrasenas se manejan con hashing, no con cifrado reversible.
+- Hay pruebas para datos validos, manipulacion y errores.
+- El procedimiento de rotacion y recuperacion esta documentado.
