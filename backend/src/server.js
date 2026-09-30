@@ -2,6 +2,7 @@ import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
 import mysql from 'mysql2/promise';
+import { createProductsRoutes } from './routes/productsRoutes.js';
 
 const app = express();
 const port = Number(process.env.PORT || 3000);
@@ -18,6 +19,7 @@ const pool = mysql.createPool({
 
 app.use(cors());
 app.use(express.json());
+app.use('/api/products', createProductsRoutes(pool));
 
 app.get('/api/health', async (_request, response) => {
   try {
@@ -26,6 +28,14 @@ app.get('/api/health', async (_request, response) => {
   } catch (error) {
     response.status(503).json({ status: 'error', database: 'disconnected' });
   }
+});
+
+app.use((error, _request, response, _next) => {
+  console.error('API error:', error.message);
+  response.status(500).json({
+    error: 'internal_server_error',
+    message: 'No se pudo completar la solicitud.'
+  });
 });
 
 app.listen(port, () => {

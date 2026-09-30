@@ -286,6 +286,96 @@ h1 {
   font-weight: 700;
 }
 
+.scanner-panel {
+  margin-top: 24px;
+  padding: 24px 27px;
+  border: 1px solid #b9d4d6;
+  border-radius: 6px;
+  background: #eaf1ef;
+  animation: reveal 500ms 180ms ease both;
+}
+
+.scanner-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scanner-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 5px;
+  color: #d5e4e2;
+  background: #20364d;
+  font-size: 27px;
+}
+
+.scanner-heading .section-kicker {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.scanner-heading h2 {
+  margin-bottom: 0;
+  color: #26333e;
+  font-size: 16px;
+}
+
+.scanner-status {
+  margin-left: auto;
+  padding: 6px 9px;
+  border-radius: 4px;
+  color: #286653;
+  background: #d3e8df;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.scanner-panel p {
+  margin: 19px 0 8px;
+  color: #68727c;
+  font-size: 12px;
+}
+
+.scanner-code {
+  display: block;
+  color: #17202b;
+  font-family: 'Courier New', monospace;
+  font-size: 22px;
+  letter-spacing: 1px;
+  overflow-wrap: anywhere;
+}
+
+.scanner-code.is-empty {
+  color: #8a929a;
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+.scanned-product {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #c7d9d5;
+}
+
+.scanned-product strong {
+  color: #17202b;
+  font-size: 14px;
+}
+
+.scanned-product span {
+  color: #68727c;
+  font-size: 12px;
+}
+
 .empty-panel {
   display: flex;
   align-items: center;
@@ -393,5 +483,13 @@ h1 {
   .metric-card {
     min-height: auto;
     gap: 10px;
+  }
+
+  .scanner-panel {
+    padding: 20px;
+  }
+
+  .scanner-status {
+    align-self: flex-start;
   }
 }

@@ -1,18 +1,24 @@
-# React + Vite
+# Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+## Desarrollo
 
-Currently, two official plugins are available:
+```bash
+npm install
+copy .env.example .env
+npm run dev
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+El frontend usa `VITE_API_URL` para localizar la API. Por defecto apunta a
+`http://localhost:3000/api`.
 
-## React Compiler
+## Lectura QR
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Las pistolas configuradas como teclado envian el codigo y terminan con
+`Enter`. En la vista Stock, el codigo se consulta mediante:
 
-## Expanding the Oxlint configuration
+```text
+GET /api/products/by-code?code=<codigo>
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
-
-//ignorar, es informacion sobre REACT que no se requiere 
+La interfaz distingue producto encontrado, codigo inexistente y API no
+disponible.

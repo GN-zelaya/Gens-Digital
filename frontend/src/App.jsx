@@ -1,8 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
+import { QrScannerController } from './controllers/qrScannerController'
+import { findProductByScanCode } from './services/productsApi'
 
 function App() {
   const [activeView, setActiveView] = useState('stock')
+  const [lastScannedCode, setLastScannedCode] = useState('')
+  const [scanMessage, setScanMessage] = useState('Esperando una lectura...')
+  const [scannedProduct, setScannedProduct] = useState(null)
 
   const views = {
     stock: {
@@ -25,9 +30,66 @@ function App() {
         ['Ticket promedio', '$186'],
       ],
     },
+    proveedores: {
+      eyebrow: 'Abastecimiento',
+      title: 'Proveedores',
+      description: 'Organiza tus proveedores y consulta el estado de tus compras.',
+      metrics: [
+        ['Proveedores activos', '32'],
+        ['Ordenes pendientes', '8'],
+        ['Compras del mes', '$8.420'],
+      ],
+    },
+    clientes: {
+      eyebrow: 'Relacion comercial',
+      title: 'Clientes',
+      description: 'Gestiona tus contactos y conoce la actividad de tu cartera.',
+      metrics: [
+        ['Clientes registrados', '186'],
+        ['Clientes nuevos', '24'],
+        ['Clientes activos', '142'],
+      ],
+    },
+    caja: {
+      eyebrow: 'Finanzas',
+      title: 'Caja',
+      description: 'Controla los ingresos, egresos y saldo disponible del negocio.',
+      metrics: [
+        ['Saldo disponible', '$12.840'],
+        ['Ingresos del mes', '$28.460'],
+        ['Egresos del mes', '$15.620'],
+      ],
+    },
   }
 
   const currentView = views[activeView]
+
+  useEffect(() => {
+    if (activeView !== 'stock') {
+      return undefined
+    }
+
+    const scanner = new QrScannerController({
+      onScan: async (code) => {
+        setLastScannedCode(code)
+        setScannedProduct(null)
+        setScanMessage('Buscando producto...')
+
+        try {
+          const product = await findProductByScanCode(code)
+          setScannedProduct(product)
+          setScanMessage('Producto encontrado.')
+        } catch (error) {
+          setScanMessage(error.code === 'product_not_found'
+            ? 'No existe un producto activo con ese codigo.'
+            : 'No se pudo conectar con el servicio de productos.')
+        }
+      },
+    })
+
+    scanner.start()
+    return () => scanner.stop()
+  }, [activeView])
 
   return (
     <div className="dashboard-shell">
@@ -70,6 +132,42 @@ function App() {
             </span>
             <span className="feature-arrow" aria-hidden="true">→</span>
           </button>
+          <button
+            type="button"
+            className={`feature-card ${activeView === 'proveedores' ? 'is-active' : ''}`}
+            onClick={() => setActiveView('proveedores')}
+          >
+            <span className="feature-icon suppliers-icon" aria-hidden="true">♧</span>
+            <span className="feature-copy">
+              <strong>Proveedores</strong>
+              <small>Compras y abastecimiento</small>
+            </span>
+            <span className="feature-arrow" aria-hidden="true">→</span>
+          </button>
+          <button
+            type="button"
+            className={`feature-card ${activeView === 'clientes' ? 'is-active' : ''}`}
+            onClick={() => setActiveView('clientes')}
+          >
+            <span className="feature-icon clients-icon" aria-hidden="true">◎</span>
+            <span className="feature-copy">
+              <strong>Clientes</strong>
+              <small>Contactos y cartera</small>
+            </span>
+            <span className="feature-arrow" aria-hidden="true">→</span>
+          </button>
+          <button
+            type="button"
+            className={`feature-card ${activeView === 'caja' ? 'is-active' : ''}`}
+            onClick={() => setActiveView('caja')}
+          >
+            <span className="feature-icon cash-icon" aria-hidden="true">$</span>
+            <span className="feature-copy">
+              <strong>Caja</strong>
+              <small>Ingresos y egresos</small>
+            </span>
+            <span className="feature-arrow" aria-hidden="true">→</span>
+          </button>
         </nav>
 
         <div className="sidebar-footer">
@@ -105,6 +203,29 @@ function App() {
               </article>
             ))}
           </div>
+
+          {activeView === 'stock' && (
+            <section className="scanner-panel" aria-live="polite">
+              <div className="scanner-heading">
+                <span className="scanner-mark" aria-hidden="true">⌁</span>
+                <div>
+                  <span className="section-kicker">Lector QR</span>
+                  <h2>Escaneo de productos</h2>
+                </div>
+                <span className="scanner-status">Activo</span>
+              </div>
+              <p>{scanMessage}</p>
+              <strong className={lastScannedCode ? 'scanner-code' : 'scanner-code is-empty'}>
+                {lastScannedCode || 'Aguardando codigo...'}
+              </strong>
+              {scannedProduct && (
+                <div className="scanned-product">
+                  <strong>{scannedProduct.name}</strong>
+                  <span>SKU {scannedProduct.sku} · Stock {scannedProduct.stock}</span>
+                </div>
+              )}
+            </section>
+          )}
 
           <div className="empty-panel">
             <span className="empty-panel-mark" aria-hidden="true">+</span>
